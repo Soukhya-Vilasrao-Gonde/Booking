@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Link Generator</title>
+  <style>
+    body {
+      font-family: 'Google Sans', Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #f8f9fa;
+      color: #202124;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      color: white;
+      padding: 16px;
+      margin: -16px -16px 20px -16px;
+      border-radius: 0 0 8px 8px;
+    }
+    
+    .header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    .header p {
+      margin: 4px 0 0 0;
+      opacity: 0.9;
+      font-size: 12px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid #e8eaed;
+    }
+    
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-enabled {
+      background-color: #34a853;
+    }
+    
+    .status-disabled {
+      background-color: #ea4335;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #3c4043;
+    }
+    
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: #4285f4;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+    
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+    
+    .button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .button:hover {
+      background: #3367d6;
+    }
+    
+    .button:disabled {
+      background: #dadce0;
+      color: #5f6368;
+      cursor: not-allowed;
+    }
+    
+    .button-secondary {
+      background: #f8f9fa;
+      color: #3c4043;
+      border: 1px solid #dadce0;
+    }
+    
+    .button-secondary:hover {
+      background: #f1f3f4;
+    }
+    
+    .button-danger {
+      background: #ea4335;
+    }
+    
+    .button-danger:hover {
+      background: #d33b2c;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 16px;
+    }
+    
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #4285f4;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 8px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .message {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    
+    .message-success {
+      background: #e8f5e8;
+      color: #137333;
+      border: 1px solid #ceead6;
+    }
+    
+    .message-error {
+      background: #fce8e6;
+      color: #c5221f;
+      border: 1px solid #f9dedc;
+    }
+    
+    .message-info {
+      background: #e8f0fe;
+      color: #1967d2;
+      border: 1px solid #d2e3fc;
+    }
+    
+    .help-text {
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 4px;
+    }
+    
+    .config-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .config-item:last-child {
+      border-bottom: none;
+    }
+    
+    .config-label {
+      font-weight: 500;
+      color: #3c4043;
+    }
+    
+    .config-value {
+      color: #5f6368;
+      font-size: 12px;
+      max-width: 150px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>🔗 Dynamic Link Generator</h2>
+    <p>Generate personalized links for form responses</p>
+  </div>
+  
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading configuration...</p>
+  </div>
+  
+  <div id="content" style="display: none;">
+    <!-- Status Card -->
+    <div class="card">
+      <h3 style="margin-top: 0;">Status</h3>
+      <div id="status-display">
+        <span id="status-indicator" class="status-indicator"></span>
+        <span id="status-text">Loading...</span>
+      </div>
+    </div>
+    
+    <!-- Configuration Card -->
+    <div class="card">
+      <h3 style="margin-top: 0;">Configuration</h3>
+      
+      <div class="form-group">
+        <label for="customMessage">Custom Message</label>
+        <textarea id="customMessage" placeholder="Enter the message to show before the dynamic link...">Click the link below to access your personalized response page:</textarea>
+        <div class="help-text">This message will appear on the form confirmation page before the dynamic link.</div>
+      </div>
+      
+      <div style="margin-top: 20px;">
+        <button id="enableBtn" class="button" onclick="enableDynamicLinks()">Enable Dynamic Links</button>
+        <button id="disableBtn" class="button button-danger" onclick="disableDynamicLinks()" style="display: none;">Disable</button>
+        <button class="button button-secondary" onclick="testConnection()">Test Connection</button>
+      </div>
+    </div>
+    
+    <!-- Current Settings Card -->
+    <div class="card">
+      <h3 style="margin-top: 0;">Current Settings</h3>
+      <div id="current-settings">
+        <div class="config-item">
+          <span class="config-label">Form ID:</span>
+          <span id="form-id" class="config-value">-</span>
+        </div>
+        <div class="config-item">
+          <span class="config-label">Form Title:</span>
+          <span id="form-title" class="config-value">-</span>
+        </div>
+        <div class="config-item">
+          <span class="config-label">Backend URL:</span>
+          <span id="backend-url" class="config-value">-</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Help Card -->
+    <div class="card">
+      <h3 style="margin-top: 0;">ℹ️ How it works</h3>
+      <ol style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.5;">
+        <li>Enable dynamic links for your form</li>
+        <li>When users submit the form, a unique link is generated</li>
+        <li>The link appears on the confirmation page</li>
+        <li>Users can access their personalized response page</li>
+      </ol>
+    </div>
+  </div>
+  
+  <div id="messages"></div>
+
+  <script>
+    // Global variables
+    let currentConfig = null;
+    
+    // Initialize the sidebar
+    document.addEventListener('DOMContentLoaded', function() {
+      loadConfiguration();
+    });
+    
+    function loadConfiguration() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(onConfigLoaded)
+        .withFailureHandler(onError)
+        .getCurrentConfig();
+    }
+    
+    function onConfigLoaded(config) {
+      currentConfig = config;
+      updateUI(config);
+      showLoading(false);
+    }
+    
+    function updateUI(config) {
+      // Update status
+      const statusIndicator = document.getElementById('status-indicator');
+      const statusText = document.getElementById('status-text');
+      const enableBtn = document.getElementById('enableBtn');
+      const disableBtn = document.getElementById('disableBtn');
+      
+      if (config.isEnabled) {
+        statusIndicator.className = 'status-indicator status-enabled';
+        statusText.textContent = 'Dynamic Links Enabled';
+        enableBtn.style.display = 'none';
+        disableBtn.style.display = 'inline-block';
+      } else {
+        statusIndicator.className = 'status-indicator status-disabled';
+        statusText.textContent = 'Dynamic Links Disabled';
+        enableBtn.style.display = 'inline-block';
+        disableBtn.style.display = 'none';
+      }
+      
+      // Update form fields
+      document.getElementById('customMessage').value = config.customMessage || '';
+      
+      // Update current settings
+      document.getElementById('form-id').textContent = config.formId || '-';
+      document.getElementById('form-title').textContent = config.formTitle || '-';
+      document.getElementById('backend-url').textContent = config.backendUrl || '-';
+    }
+    
+    function enableDynamicLinks() {
+      const customMessage = document.getElementById('customMessage').value;
+      
+      showMessage('Enabling dynamic links...', 'info');
+      
+      google.script.run
+        .withSuccessHandler(onActionComplete)
+        .withFailureHandler(onError)
+        .enableDynamicLinks(customMessage);
+    }
+    
+    function disableDynamicLinks() {
+      if (!confirm('Are you sure you want to disable dynamic links?')) {
+        return;
+      }
+      
+      showMessage('Disabling dynamic links...', 'info');
+      
+      google.script.run
+        .withSuccessHandler(onActionComplete)
+        .withFailureHandler(onError)
+        .disableDynamicLinks();
+    }
+    
+    function testConnection() {
+      showMessage('Testing backend connection...', 'info');
+      
+      google.script.run
+        .withSuccessHandler(onConnectionTest)
+        .withFailureHandler(onError)
+        .testBackendConnection();
+    }
+    
+    function onActionComplete(result) {
+      if (result.success) {
+        showMessage(result.message, 'success');
+        // Reload configuration
+        setTimeout(loadConfiguration, 1000);
+      } else {
+        showMessage(result.message, 'error');
+      }
+    }
+    
+    function onConnectionTest(result) {
+      if (result.success) {
+        showMessage(`✅ ${result.message} (Status: ${result.status})`, 'success');
+      } else {
+        showMessage(`❌ ${result.message}`, 'error');
+      }
+    }
+    
+    function onError(error) {
+      console.error('Error:', error);
+      showMessage('An error occurred: ' + error.message, 'error');
+    }
+    
+    function showMessage(text, type) {
+      const messagesDiv = document.getElementById('messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message message-${type}`;
+      messageDiv.textContent = text;
+      
+      // Clear previous messages
+      messagesDiv.innerHTML = '';
+      messagesDiv.appendChild(messageDiv);
+      
+      // Auto-hide info messages
+      if (type === 'info') {
+        setTimeout(() => {
+          if (messagesDiv.contains(messageDiv)) {
+            messagesDiv.removeChild(messageDiv);
+          }
+        }, 3000);
+      }
+    }
+    
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+      document.getElementById('content').style.display = show ? 'none' : 'block';
+    }
+  </script>
+</body>
+</html>
